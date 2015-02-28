@@ -1,0 +1,59 @@
+<project name="distro.build" default="build" basedir="./" xmlns:antcontrib="antlib:net.sf.antcontrib">
+
+  <loadproperties srcfile="build.properties" />
+  <import file="${cfdistro.build.file}" />
+  <path id="iconexe.lib.path">
+    <fileset dir="${iconexe.lib.dir}">
+      <include name="*.jar" />
+    </fileset>
+  </path>
+
+  <target name="build" depends="iconexe.jar">
+  </target>
+
+  <target name="iconexe.compile" depends="get.deps">
+    <delete dir="${iconexe.bin.dir}" />
+    <mkdir dir="${iconexe.bin.dir}" />
+    <javac-ecj srcdir="${iconexe.src.dir}/" destdir="${iconexe.bin.dir}" classpath="${toString:iconexe.lib.path}" compliance="1.7" />
+  </target>
+
+  <target name="iconexe.jar" depends="iconexe.compile">
+    <copy todir="${iconexe.bin.dir}iconexe/" file="${iconexe.src.dir}/version.properties">
+      <filterchain>
+        <expandproperties />
+        <deletecharacters chars="\n" />
+        <trim />
+        <ignoreblank />
+      </filterchain>
+    </copy>
+    <delete file="${iconexe.jar.file}" />
+    <jar destfile="${iconexe.jar.file}" duplicate="preserve" basedir="${iconexe.bin.dir}" includes="**/*.class, **/*.png, **META-INF/services/*, **/*.dtd, **/*.xsd, **/META-INF/INDEX.LIST, **/*.properties, **/*.xml," filesetmanifest="mergewithoutmain">
+      <manifest>
+        <attribute name="Main-Class" value="iconexe.Runner" />
+        <attribute name="Class-Path" value="./${iconexe.jar}" />
+      </manifest>
+      <zipgroupfileset dir="${iconexe.lib.dir}" includes="**/*.jar" excludes="**/ant*" />
+    </jar>
+  </target>
+
+  <target name="test" depends="build.artifact">
+    <delete dir="${dist.dir}/exe"/>
+    <mkdir dir="${dist.dir}/exe"/>
+    <copy toDir="${dist.dir}/exe">
+      <fileset dir="${tests.dir}/resources/" includes="*" />
+    </copy>
+    <taskdef-dependency name="iconexe" classname="iconexe.ant.IconExeTask" artifactId="iconexe" groupId="org.cfmlprojects" version="1.0.0" />
+    <ant-set-log-level level="3" />
+    <iconexe exeFile="${dist.dir}/exe/service.exe" icoFile="${dist.dir}/icon.ico"/>
+  </target>
+
+  <target name="build.artifact" depends="iconexe.jar">
+    <pom-and-deploy pomid="iconexe.pom" packaging="jar" artifact="${iconexe.jar.file}" groupId="org.cfmlprojects" artifactId="iconexe" version="${iconexe.version}" name="iconexe" />
+  </target>
+
+  <target name="get.deps">
+    <delete dir="${iconexe.lib.dir}" />
+    <dependency groupId="org.apache.ant" artifactId="ant" version="1.9.4" unzip="false" type="jar" dest="${iconexe.lib.dir}" />
+  </target>
+
+</project>
